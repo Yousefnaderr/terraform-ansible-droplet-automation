@@ -1,0 +1,6 @@
+---
+
+install_docker: true
+install_ansible: true
+auto_update: true
+

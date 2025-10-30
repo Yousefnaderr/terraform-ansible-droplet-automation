@@ -1,0 +1,66 @@
+---
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: auto_update
+
+- name: Upgrade all packages
+  apt:
+    upgrade: dist
+  when: auto_update
+
+- name: Install common base packages
+  apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Install DevOps tools
+  apt:
+    name: "{{ devops_tools }}"
+    state: present
+
+- name: Enable and start Docker service
+  service:
+    name: docker
+    state: started
+    enabled: true
+  when: install_docker
+  notify: restart docker
+
+- name: Upload MOTD banner
+  copy:
+    src: motd.txt
+    dest: /etc/motd
+    owner: root
+    group: root
+    mode: '0644'
+
+- name: Apply Docker configuration template
+  template:
+    src: docker-daemon.json.j2
+    dest: /etc/docker/daemon.json
+  notify: restart docker
+
+- name: Verify APT functionality
+  shell: apt-get update -qq
+  register: apt_status
+  changed_when: false
+  failed_when: apt_status.rc != 0
+
+- name: Display package manager status
+  debug:
+    msg: "APT is operational."
+
+- name: Validate tool versions
+  shell: |
+    echo "=== TOOL VERSIONS ==="
+    docker --version || echo "Docker not found"
+    ansible --version | head -n 1 || echo "Ansible not found"
+    python3 --version || echo "Python not found"
+  register: versions
+  changed_when: false
+
+- name: Show validation output
+  debug:
+    msg: "{{ versions.stdout_lines }}"
+

@@ -1,0 +1,7 @@
+---
+- name: Configure new droplet
+  hosts: all
+  become: true
+  roles:
+    - server_setup
+
